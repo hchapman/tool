@@ -171,7 +171,7 @@ public class TOOLProtocol {
         }
     }
 
-    public void request(DataRequest r) {
+    public synchronized void request(DataRequest r) {
         if (!connected)
             return;
 

@@ -77,8 +77,20 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
     private DataType streamType = DataTypes.DataType.THRESH;
     private boolean isStreaming = false;
     private boolean isSavingStream = false;
+    private boolean isDrawingObjects = false;
     private JButton startStopButton, streamButton;
     private JCheckBox saveStreamBox;
+    private JCheckBox drawObjectsBox;
+
+    // Widgets to determine which frames to save
+    private JCheckBox saveAllFramesBox;
+    private JCheckBox saveOptionBallBox;
+    private JCheckBox saveOptionYGPBox;
+    private JCheckBox saveOptionBGPBox;
+    private JCheckBox saveOptionCrossBox;
+
+    private Object streamOptionsLock;
+    private Object drawObjectsLock;
 
     private String saveFramePath = null;
 
@@ -96,6 +108,8 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
         typeMap = new HashMap<JButton, DataType>();
         robotMap = new HashMap<JMenuItem, RemoteRobot>();
         imagePanel = new ImagePanel();
+
+        streamOptionsLock = new Object();
 
         selectedRobot = null;
 
@@ -161,8 +175,7 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
 
 
         String streamingTypes[] = {DataTypes.title(DataTypes.DataType.THRESH),
-                                   DataTypes.title(DataTypes.DataType.IMAGE),
-                                   DataTypes.title(DataTypes.DataType.OBJECTS)};
+                                   DataTypes.title(DataTypes.DataType.IMAGE)};
         JComboBox streamComboBox = new JComboBox(streamingTypes);
 
         Dimension maxDim = new Dimension(200,40);
@@ -181,10 +194,6 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
                     else if (box.getSelectedItem() ==
                              DataTypes.title(DataTypes.DataType.IMAGE)){
                     streamType = DataTypes.DataType.IMAGE;
-                    }
-                    else if (box.getSelectedItem() ==
-                            DataTypes.title(DataTypes.DataType.OBJECTS)){
-                        streamType = DataTypes.DataType.OBJECTS;
                     }
                 }
             });
@@ -247,6 +256,31 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
                 }
             });
         subPanel.add(saveStreamBox);
+
+        drawObjectsBox = new JCheckBox("Draw objects");
+        drawObjectsBox.addItemListener( new ItemListener() {
+                public void itemStateChanged(ItemEvent e) {
+
+                    synchronized(drawObjectsLock) {
+                        if (e.getStateChange() == ItemEvent.SELECTED) {
+                            isDrawingObjects = true;
+                        } else if (e.getStateChange() == ItemEvent.DESELECTED) {
+                            isDrawingObjects = false;
+                        }
+                    }
+
+                }
+            });
+        subPanel.add(drawObjectsBox);
+
+        saveOptionBallBox = new JCheckBox("Ball");
+        saveOptionBallBox.addItemListener( new ItemListener() {
+                public void itemStateChanged(ItemEvent e) {
+                    if (e.getStateChange() == ItemEvent.SELECTED) {
+                    } else if (e.getStateChange() = ItemEvent.DESELECTED) {
+                    }
+                }
+            });
     }
 
     // Pretty tremendous hack for streaming images from Nao, probably could
@@ -262,10 +296,24 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
 
                     VisionState visionState = null;
 
+                    // Stream options lock not edited by other threads..
+                    boolean _isDrawingObjects = false;
+                    boolean _isStreaming = false;
+                    boolean _isSavingStream = false;
+
+                    boolean _saveBall = false;
+                    boolean _saveAll = true;
+
                     try {
                         while (true){
                             startTime = System.currentTimeMillis();
-                            if (!isStreaming){
+
+                            synchronized(streamOptionsLock) {
+                                _isDrawingObjects = isDrawingObjects;
+                                _isStreaming = isStreaming;
+                                _isSavingStream = isSavingStream;
+                            }
+                            if (!_isStreaming){
                                 Thread.sleep(1500);
                                 continue;
                             }
@@ -275,49 +323,93 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
                             Frame f = new Frame();
 
                             if (streamType == DataTypes.DataType.THRESH) {
-                                img = selectedRobot.retrieveThresh();
-                                imagePanel.setOverlayImage(null);
-                            } else if (streamType == DataTypes.DataType.IMAGE) {
-                                img = selectedRobot.retrieveImage();
-                                imagePanel.setOverlayImage(null);
-                            } else if (streamType == DataTypes.DataType.OBJECTS) {
-                                selectedRobot.fillNewFrame(f);
-                                if (f != null){
-                                    if (visionState == null){
-                                        visionState = new VisionState(f,
-                                                tool.getColorTable());
-                                        img = visionState.getThreshImage();
-                                        threshOverlay =
-                                            visionState.getThreshOverlay();
+                                if (_isSavingStream) {
+                                    f = selectedRobot.get(numFramesStreamed);
+                                    selectedRobot.fillNewFrame(f);
+                                    selectedRobot.load(numFramesStreamed);
+                                    selectedRobot.store(numFramesStreamed, f,
+                                                        saveFramePath);
+                                    numFramesStreamed ++;
+                                    if (f != null) {
+                                        if (visionState == null) {
+                                            visionState = new VisionState(f,
+                                                                          tool.getColorTable());
+                                            visionState.update();
+                                            img = visionState.getThreshImage();
+                                        } else {
+                                            visionState.newFrame(f, tool.getColorTable());
+                                            visionState.update();
+                                            img = visionState.getThreshImage();
+                                        }
                                     }
-                                    else {
-                                        visionState.newFrame(f,
-                                                             tool.getColorTable());
-                                        //visionState.setColorTable(tool.getColorTable());
+                                } else if (_isDrawingObjects) {
+                                    // If we're not saving the stream, but are
+                                    // drawing objects, then we will need a
+                                    // vision state anyway (HACK)
+                                    selectedRobot.fillNewFrame(f);
+                                    if (f != null) {
+                                        if (visionState == null) {
+                                            visionState = new VisionState(f,
+                                                                          tool.getColorTable());
+                                        } else {
+                                            visionState.newFrame(f, tool.getColorTable());
+                                        }
                                         visionState.update();
                                         img = visionState.getThreshImage();
-                                        threshOverlay =
-                                            visionState.getThreshOverlay();
                                     }
+                                } else {
+                                    img = selectedRobot.retrieveThresh();
                                 }
-                                imagePanel.setOverlayImage(threshOverlay);
+
+                                if (_isDrawingObjects) {
+                                    imagePanel.setOverlayImage(visionState.getThreshOverlay());
+                                } else {
+                                    imagePanel.setOverlayImage(null);
+                                }
+                            } else if (streamType == DataTypes.DataType.IMAGE) {
+                                if (_isSavingStream) {
+                                    // If we're saving the stream, get all of
+                                    // the data we need and save the frame
+                                    selectedRobot.fillNewFrame(f);
+                                    f = selectedRobot.get(numFramesStreamed);
+                                    selectedRobot.fillNewFrame(f);
+                                    selectedRobot.load(numFramesStreamed);
+                                    selectedRobot.store(numFramesStreamed, f,
+                                                        saveFramePath);
+                                    numFramesStreamed ++;
+                                    img = f.image();
+                                } else if (_isDrawingObjects) {
+                                    // If we're not saving the stream, but are
+                                    // drawing objects, then we will need a
+                                    // frame anyway (HACK)
+                                    selectedRobot.fillNewFrame(f);
+                                    img = f.image();
+                                } else {
+                                    // If we're doing neither, just get an image
+                                    // from the robot
+                                    img = selectedRobot.retrieveImage();
+                                }
+
+                                if (_isDrawingObjects) {
+                                    if (f != null) {
+                                        if (visionState == null) {
+                                            visionState = new VisionState(f,
+                                                                          tool.getColorTable());
+                                        } else {
+                                            visionState.newFrame(f, tool.getColorTable());
+                                        }
+                                        visionState.update();
+                                        imagePanel.setOverlayImage(visionState.getThreshOverlay());
+                                    }
+                                } else {
+                                    imagePanel.setOverlayImage(null);
+                                }
                             }
+
                             if (img != null) {
                                 imagePanel.updateImage(img);
-                                //    imagePanel.setOverlayImage(null);
                             }
-                            //if (threshOverlay != null) {
-                            //   imagePanel.setOverlayImage(threshOverlay);
-                            //}
 
-                            if (isSavingStream){
-                                // Write image to a frame
-                                Frame newFrame = selectedRobot.get(numFramesStreamed);
-                                selectedRobot.fillNewFrame(newFrame);
-                                selectedRobot.load(numFramesStreamed);
-                                selectedRobot.store(numFramesStreamed,saveFramePath);
-                                numFramesStreamed++;
-                            }
                             timeSpent = System.currentTimeMillis() - startTime;
                             if (timeSpent < FRAME_LENGTH_MILLIS){
                                 Thread.sleep(FRAME_LENGTH_MILLIS - timeSpent);

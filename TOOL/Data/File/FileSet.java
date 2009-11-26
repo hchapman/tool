@@ -124,4 +124,14 @@ public class FileSet extends AbstractDataSet {
         // mark that the frame is no longer modifed form the stored data
         frameChanged.set(i, false);
     }
+
+    public void store(int i, Frame frm, String p) throws TOOLException {
+        String baseName = i + FrameLoader.ROBOT_EXTS[frm.type()];
+        File f = new File(p, baseName);
+
+        // store frame in specified file
+        FrameLoader.storeFrame(f, frm);
+        // mark that the frame is no longer modifed form the stored data
+        // frameChanged.set(i, false);
+    }
 }

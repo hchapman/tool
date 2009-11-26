@@ -193,7 +193,7 @@ public class RemoteRobot extends FileSet {
         }
     }
 
-	public void fillNewFrame(Frame f) {
+	public synchronized void fillNewFrame(Frame f) {
 		try {
 
 			if (!proto.isConnected())

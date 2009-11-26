@@ -85,7 +85,7 @@ public class VisionState {
                                                              thresholdedImage.getHeight());
         }
     }
-    
+
     public void newFrame(Frame f, ColorTable c) {
     	this.f = f;
     	rawImage = f.image();
@@ -95,7 +95,7 @@ public class VisionState {
             thresholdedImage = new ProcessedImage(f, colorTable);
             thresholdedOverlay = new ThresholdedImageOverlay(thresholdedImage.getWidth(),
                                                              thresholdedImage.getHeight());
-        }        
+        }
     }
 
     //This updates the whole processed stuff
