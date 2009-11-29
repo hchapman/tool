@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -40,6 +41,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JRadioButton;
 
 import javax.swing.JComboBox;
 
@@ -154,7 +156,7 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
 
         c.gridy++;
         c.weighty = 1;
-        subPanel.add(new SaveOptionsPanel(this), c);
+        subPanel.add(new FilterOptionsPanel(this), c);
         
         mainc.gridx = 0; mainc.gridy = 0;
         //mainc.anchor = GridBagConstraints.WEST;
@@ -184,123 +186,6 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
             subPanel.add(b);
         }
     }
-
-    // private void createStreamingButtons(JPanel panel){
-    //     JPanel subPanel = new JPanel();
-    //     subPanel.setLayout(new BoxLayout(subPanel, BoxLayout.PAGE_AXIS));
-    //     panel.add(subPanel);
-
-    //     subPanel.add(new JLabel("Streaming:"));
-
-
-    //     String streamingTypes[] = {DataTypes.title(DataTypes.DataType.THRESH),
-    //                                DataTypes.title(DataTypes.DataType.IMAGE)};
-    //     JComboBox streamComboBox = new JComboBox(streamingTypes);
-
-    //     Dimension maxDim = new Dimension(200,40);
-    //     Dimension prefDim = new Dimension(200,40);
-    //     streamComboBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-    //     streamComboBox.setMaximumSize(maxDim);
-    //     streamComboBox.setPreferredSize(prefDim);
-
-    //     streamComboBox.addActionListener( new ActionListener() {
-    //             public void actionPerformed(ActionEvent e){
-    //                 JComboBox box = (JComboBox)e.getSource();
-    //                 if (box.getSelectedItem() ==
-    //                     DataTypes.title(DataTypes.DataType.THRESH)){
-    //                     streamType = DataTypes.DataType.THRESH;
-    //                 }
-    //                 else if (box.getSelectedItem() ==
-    //                          DataTypes.title(DataTypes.DataType.IMAGE)){
-    //                 streamType = DataTypes.DataType.IMAGE;
-    //                 }
-    //             }
-    //         });
-
-    //     subPanel.add(streamComboBox);
-
-    //     startStopButton = new JButton("Start");
-    //     startStopButton.addActionListener(new ActionListener() {
-    //             public void actionPerformed(ActionEvent e){
-    //                 if (selectedRobot == null)
-    //                     return;
-
-    //                 // Assuming we are using proper directory structure,
-    //                 // set the default save folder to
-    //                 // $ROBOCUP/man/frames/stream.
-
-    //                 if (saveFramePath == null) {
-    //                     if (tool.CONSOLE.pathExists("../man/frames/stream")) {
-    //                         saveFramePath = tool.CONSOLE.formatPath("../man/frames/stream");
-    //                     } else {
-    //                         saveFramePath = tool.CONSOLE.promptDirOpen("Save Destination",
-    //                                                                    "../man/frames");
-    //                     }
-    //                 }
-
-    //                 if (saveFramePath == null)
-    //                     return;
-
-    //                 isStreaming = !isStreaming;
-
-    //                 if (isStreaming){
-    //                     startStopButton.setText("Stop");
-    //                 } else {
-    //                     startStopButton.setText("Start");
-    //                 }
-
-    //             }
-    //         });
-    //     subPanel.add(startStopButton);
-
-    //     JButton frameDestButton = new JButton("Set destination");
-    //     frameDestButton.addActionListener(new ActionListener() {
-    //             public void actionPerformed(ActionEvent e){
-    //                 saveFramePath = tool.CONSOLE.promptDirOpen("Save Destination",
-    //                                                            saveFramePath);
-    //             }
-    //         });
-    //     subPanel.add(frameDestButton);
-
-    //     saveStreamBox = new JCheckBox("Save stream");
-    //     saveStreamBox.addItemListener( new ItemListener() {
-    //             public void itemStateChanged(ItemEvent e) {
-
-    //                 if (e.getStateChange() == ItemEvent.SELECTED){
-    //                     isSavingStream = true;
-    //                 } else if (e.getStateChange() == ItemEvent.DESELECTED){
-    //                     isSavingStream = false;
-    //                 }
-
-    //             }
-    //         });
-    //     subPanel.add(saveStreamBox);
-
-    //     drawObjectsBox = new JCheckBox("Draw objects");
-    //     drawObjectsBox.addItemListener( new ItemListener() {
-    //             public void itemStateChanged(ItemEvent e) {
-
-    //                 synchronized(drawObjectsLock) {
-    //                     if (e.getStateChange() == ItemEvent.SELECTED) {
-    //                         isDrawingObjects = true;
-    //                     } else if (e.getStateChange() == ItemEvent.DESELECTED) {
-    //                         isDrawingObjects = false;
-    //                     }
-    //                 }
-
-    //             }
-    //         });
-    //     subPanel.add(drawObjectsBox);
-
-    //     saveOptionBallBox = new JCheckBox("Ball");
-    //     saveOptionBallBox.addItemListener( new ItemListener() {
-    //             public void itemStateChanged(ItemEvent e) {
-    //                 if (e.getStateChange() == ItemEvent.SELECTED) {
-    //                 } else if (e.getStateChange() == ItemEvent.DESELECTED) {
-    //                 }
-    //             }
-    //         });
-    // }
 
     // Pretty tremendous hack for streaming images from Nao, probably could
     // and should be more elegant. Oh well.
@@ -462,6 +347,92 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
         }
     }
 
+    // Try to set the default save path; else prompt the user for a path
+    // returns true if a path is set, false otherwise
+    public boolean setDefaultSavePath() {
+        // Assuming we are using proper directory structure,
+        // set the default save folder to
+        // $ROBOCUP/man/frames/stream.
+
+        if (saveFramePath == null) {
+            if (tool.CONSOLE.pathExists("../man/frames/stream")) {
+                saveFramePath = tool.CONSOLE.formatPath("../man/frames/stream");
+            } else {
+                saveFramePath = tool.CONSOLE.promptDirOpen("Save Destination",
+                                                           "../man/frames");
+            }
+        }
+
+        return (saveFramePath != null);
+    }
+
+    // Try to set a new save path, with a user prompt.
+    // returns true if the path is non-null, false otherwise.
+    public boolean setNewSavePath() {
+        if (saveFramePath == null) {
+            saveFramePath = tool.CONSOLE.promptDirOpen("Save Destination",
+                                                       "../man/frames");
+        } else {
+            saveFramePath = tool.CONSOLE.promptDirOpen("Save Destination",
+                                                       saveFramePath);
+        }   
+
+        return (saveFramePath != null);
+    }
+
+    public boolean isRobotSelected() {
+        return selectedRobot != null;
+    }
+
+    // Boolean setters and getters for stream states
+    public void startSavingStream() {
+        isSavingStream = true;
+    }
+    public void stopSavingStream() {
+        isSavingStream = false;
+    }
+    public void toggleSavingStream() {
+        if (isSavingStream) {isSavingStream = !isSavingStream;}
+        else {isSavingStream = true;}
+    }
+    public boolean isSavingStream() {
+        return isSavingStream;
+    }
+
+    public void startStreaming() {
+        isStreaming = true;
+    }
+    public void stopStreaming() {
+        isStreaming = false;
+    }
+    public void toggleStreaming() {
+        if (isStreaming) {isStreaming = !isStreaming;}
+        else {isStreaming = true;}
+    }
+    public boolean isStreaming() {
+        return isStreaming;
+    }
+
+    public void startDrawingObjects() {
+        synchronized(drawObjectsLock) {
+            isDrawingObjects = true;
+        }
+    }
+    public void stopDrawingObjects() {
+        synchronized(drawObjectsLock) {
+            isDrawingObjects = false;
+        }
+    }
+    public void toggleDrawingObjects() {
+        synchronized(drawObjectsLock) {
+            if (isDrawingObjects) {isDrawingObjects = !isDrawingObjects;}
+            else {isDrawingObjects = true;}
+        }
+    }
+    public boolean isDrawingObjects() {
+        return isDrawingObjects;
+    }
+
     //
     // ActionListener contract
     //
@@ -525,6 +496,7 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
         private JCheckBox saveStreamBox;
         private JCheckBox drawObjectsBox;
         private JComboBox streamComboBox;
+        private JCheckBox saveFramesBox;
 
         public StreamOptionsPanel(RobotViewModule parentModule) {
             super(new GridBagLayout());
@@ -564,31 +536,19 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
                 });
             this.add(streamComboBox, c);
 
-            startStopButton = new JButton("Start");
+            startStopButton = new JButton("Start Streaming");
             startStopButton.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e){
-                        if (selectedRobot == null)
+                        if (!parent.isRobotSelected())
                             return;
 
-                        // Assuming we are using proper directory structure,
-                        // set the default save folder to
-                        // $ROBOCUP/man/frames/stream.
-
-                        if (saveFramePath == null) {
-                            if (tool.CONSOLE.pathExists("../man/frames/stream")) {
-                                saveFramePath = tool.CONSOLE.formatPath("../man/frames/stream");
-                            } else {
-                                saveFramePath = tool.CONSOLE.promptDirOpen("Save Destination",
-                                                                           "../man/frames");
-                            }
-                        }
-
-                        if (saveFramePath == null)
+                        // Try to set a frames directory, fail if impossible
+                        if (!parent.setDefaultSavePath())
                             return;
 
-                        isStreaming = !isStreaming;
+                        parent.toggleStreaming();
 
-                        if (isStreaming){
+                        if (parent.isStreaming()){
                             startStopButton.setText("Stop Streaming");
                         } else {
                             startStopButton.setText("Start Streaming");
@@ -602,46 +562,51 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
             JButton frameDestButton = new JButton("Set destination");
             frameDestButton.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e){
-                        saveFramePath = tool.CONSOLE.promptDirOpen("Save Destination",
-                                                                   saveFramePath);
+                        parent.setNewSavePath();
                     }
                 });
             c.gridy++;
             this.add(frameDestButton, c);
 
+            // Add the box which determines if an object overlay should be drawn or not.
             drawObjectsBox = new JCheckBox("Draw Objects");
             drawObjectsBox.addItemListener( new ItemListener() {
                     public void itemStateChanged(ItemEvent e) {
+                        if (e.getStateChange() == ItemEvent.SELECTED) {
+                            parent.startDrawingObjects();
+                        } else if (e.getStateChange() == ItemEvent.DESELECTED) {
+                            parent.stopDrawingObjects();
+                        }
+                    }
+                });
+            c.gridy++;
+            this.add(drawObjectsBox, c);
 
-                        synchronized(drawObjectsLock) {
-                            if (e.getStateChange() == ItemEvent.SELECTED) {
-                                parent.isDrawingObjects = true;
-                            } else if (e.getStateChange() == ItemEvent.DESELECTED) {
-                                parent.isDrawingObjects = false;
-                            }
+            // Add the save frames checkbox - if unchecked, save no frames
+            saveFramesBox = new JCheckBox("Save Frames");
+            saveFramesBox.addItemListener( new ItemListener() {
+                    public void itemStateChanged(ItemEvent e) {
+
+                        if (e.getStateChange() == ItemEvent.SELECTED){
+                            parent.startSavingStream();
+                        } else if (e.getStateChange() == ItemEvent.DESELECTED){
+                            parent.stopSavingStream();
                         }
 
                     }
                 });
             c.gridy++;
-            this.add(drawObjectsBox, c);
+            this.add(saveFramesBox, c);
     
         }
     }
     
-    private class SaveOptionsPanel extends JPanel {
+    private class FilterOptionsPanel extends JPanel {
         private RobotViewModule parent;
 
-        private JCheckBox saveFramesBox;
+        private ButtonGroup filterButtons;
 
-        private JCheckBox saveAllBox;
-        private JCheckBox saveBallBox;
-        private JCheckBox saveCrossBox;
-        private JCheckBox saveYGPBox;
-        private JCheckBox saveBGPBox;
-        private JCheckBox saveLineBox;
-
-        public SaveOptionsPanel(RobotViewModule parentModule) {
+        public FilterOptionsPanel(RobotViewModule parentModule) {
             super(new GridBagLayout());
             parent = parentModule;
 
@@ -652,53 +617,27 @@ public class RobotViewModule extends TOOLModule implements PopupMenuListener {
             // this.setBackground(new Color(255,0,0)); 
 
             //this.setMaximumSize(new Dimension(SIDEBAR_WIDTH,300));
-            this.setBorder(BorderFactory.createTitledBorder("Saving"));
+            this.setBorder(BorderFactory.createTitledBorder("Filtering"));
 
-            c.gridwidth = 2;
+            c.gridwidth = 1;
             c.weightx = 1;
             c.gridx = 0; c.gridy = 0;
 
-            // Add the save frames checkbox - if unchecked, save no frames
-            saveFramesBox = new JCheckBox("Save Frames");
-            saveFramesBox.addItemListener( new ItemListener() {
-                    public void itemStateChanged(ItemEvent e) {
+            // Prepare the filter radio group
+            filterButtons = new ButtonGroup();
+            JRadioButton filter;
 
-                        if (e.getStateChange() == ItemEvent.SELECTED){
-                            parent.isSavingStream = true;
-                        } else if (e.getStateChange() == ItemEvent.DESELECTED){
-                            parent.isSavingStream = false;
-                        }
+            // Add the default "every frame" button
+            filter = new JRadioButton("All Frames");
+            this.add(filter, c);
+            filterButtons.add(filter);
 
-                    }
-                });
-            this.add(saveFramesBox, c);
-
-            // Add the save frames label
-            c.gridx = 0; c.gridy++;
-            c.insets = new Insets(10,0,0,0);
-            this.add(new JLabel("Frames to Save:"), c);
-            c.insets = new Insets(0,0,0,0);
-
-            // Add the save all box - if checked, save every frame
-            c.gridx = 0; c.gridy++;
-            saveAllBox = new JCheckBox("All", true);
-            this.add(saveAllBox, c);
-
-            // Add the object specific checkboxes - if checked, save
-            // frames with the specific object in the frame
-            c.gridwidth = 1;
-            saveBallBox = new JCheckBox("Ball");
-            c.gridx = 0; c.gridy++;
-            this.add(saveBallBox, c);
-            saveCrossBox = new JCheckBox("Cross");
-            c.gridx = 1;
-            this.add(saveCrossBox, c);
-            saveYGPBox = new JCheckBox("YGP");
-            c.gridx = 0; c.gridy++;
-            this.add(saveYGPBox, c);
-            saveBGPBox = new JCheckBox("BGP");
-            c.gridx = 1;
-            this.add(saveBGPBox, c);
+            // Add an "only balls" button
+            filter = new JRadioButton("Only Balls");
+            c.gridy++;
+            this.add(filter, c);
+            filterButtons.add(filter);
+            
         }
     }
 }
